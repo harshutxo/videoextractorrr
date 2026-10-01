@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local run state, never commit
+config.yaml
+*.db
+*.db-wal
+*.db-shm
+tmp/
+logs/
+*.log

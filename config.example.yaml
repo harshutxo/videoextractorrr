@@ -1,0 +1,62 @@
+# Copy this file to config.yaml and edit it.
+# Only use this tool on content you own or have permission to copy.
+
+source:
+  # Pages the crawler starts from.
+  start_urls:
+    - https://example.com/videos
+  # Only pages on these domains are crawled. Defaults to the start URLs' domains.
+  allowed_domains: []
+  # Regexes. A URL must match at least one include pattern (if any are given)
+  # and no exclude pattern to be crawled.
+  include_patterns: []
+  exclude_patterns:
+    - '/(login|logout|signup|cart|account)'
+  # Pages whose URL matches one of these are treated as video pages and handed
+  # to yt-dlp, which knows how to extract video from 1000+ sites.
+  video_page_patterns:
+    - '/watch/'
+    - '/video/'
+  # Also pick up <video>/<source> tags, og:video meta tags and links to
+  # files with these extensions.
+  video_extensions: [mp4, webm, mov, m4v, mkv, m3u8]
+  max_depth: 10
+  max_pages: 500000
+
+crawl:
+  workers: 4
+  # Minimum seconds between requests to the same host. Be polite.
+  delay_seconds: 1.0
+  respect_robots_txt: true
+  timeout_seconds: 30
+  user_agent: "videoextractorrr/1.0 (+https://github.com/harshutxo/videoextractorrr)"
+
+transfer:
+  # Each worker downloads one video, uploads it, then deletes the local copy,
+  # so peak disk use is about workers x largest video.
+  workers: 4
+  temp_dir: ./tmp
+  # Pause new downloads while free disk space is below this.
+  min_free_gb: 20
+  max_attempts: 3
+  # Passed to yt-dlp. See https://github.com/yt-dlp/yt-dlp#format-selection
+  format: "bestvideo*+bestaudio/best"
+  # Download speed cap per worker, e.g. "5M". Empty for no cap.
+  rate_limit: ""
+  # yt-dlp output name. Must be unique per video, so keep %(id)s in it.
+  filename_template: "%(title).80B [%(id)s].%(ext)s"
+  # Optional cookies.txt for sites where you have an account.
+  cookies_file: ""
+
+destination:
+  # Any rclone remote: S3, R2, B2, Google Drive, OneDrive, Dropbox, SFTP, FTP,
+  # WebDAV, Azure, GCS... Set one up with `rclone config`, then point at it here.
+  # Examples:  "s3:my-bucket/videos"   "gdrive:Backups/videos"   "sftp-nas:/data/videos"
+  # A plain local folder also works:  "D:/videos"
+  remote: "myremote:videos"
+  # Extra flags for `rclone copyto`.
+  rclone_flags: ["--retries", "3", "--low-level-retries", "10"]
+
+state:
+  database: ./videoextractorrr.db
+  log_file: ./logs/videoextractorrr.log

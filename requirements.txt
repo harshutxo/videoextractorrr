@@ -1,0 +1,4 @@
+yt-dlp>=2025.1.1
+requests>=2.31
+beautifulsoup4>=4.12
+PyYAML>=6.0
