@@ -41,7 +41,15 @@ start_urls ──► crawler ──► pages table ──► video URLs ──�
    copy config.example.yaml config.yaml
    ```
 
-5. Edit `config.yaml`: set `source.start_urls`, `source.video_page_patterns` and `destination.remote`.
+5. Edit `config.yaml`: set `source.start_urls`, `source.video_page_patterns`, and either
+   `destination.local_dir` (save to a folder on this PC, so rclone isn't needed) or `destination.remote`.
+
+### Videos behind a login
+
+Log in to the site in your browser and export its cookies to a `cookies.txt` file (for example with the
+"Get cookies.txt LOCALLY" extension). Then set `transfer.cookies_file: cookies.txt`, and add `cookies.txt`
+to `.gitignore` because it acts as your login. Videos protected by DRM can't be downloaded this way; get those
+from the video host or storage instead.
 
 ## Usage
 

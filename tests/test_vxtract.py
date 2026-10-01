@@ -4,7 +4,6 @@ import threading
 import unittest
 from functools import partial
 from pathlib import Path
-from unittest import mock
 
 from vxtract.config import DEFAULTS, _merge
 from vxtract.crawler import Crawler, extract
@@ -90,7 +89,7 @@ class CrawlAndTransferTests(unittest.TestCase):
             "source": {"start_urls": [self.base + "/index.html"], "allowed_domains": ["127.0.0.1"]},
             "crawl": {"workers": 2, "delay_seconds": 0},
             "transfer": {"workers": 1, "temp_dir": str(Path(self.tmp.name) / "tmp"), "min_free_gb": 0},
-            "destination": {"remote": "dest:videos"},
+            "destination": {"local_dir": str(Path(self.tmp.name) / "out")},
         })
         self.store = Store(Path(self.tmp.name) / "t.db")
 
@@ -107,17 +106,11 @@ class CrawlAndTransferTests(unittest.TestCase):
         self.assertEqual(s["videos"], {"pending": 1})  # secret.mp4 blocked by robots.txt
         self.assertEqual(s["pages"].get("skipped"), 1)
 
-        uploaded = []
+        Transferer(self.cfg, self.store, stop).run()
 
-        def fake_upload(self_, path):
-            uploaded.append((path.name, path.stat().st_size))
-            return "dest:videos/" + path.name
-
-        with mock.patch("vxtract.transfer.check_tools"), mock.patch.object(Transferer, "upload", fake_upload):
-            Transferer(self.cfg, self.store, stop).run()
-
-        self.assertEqual(len(uploaded), 1)
-        self.assertEqual(uploaded[0][1], 1024)
+        saved = list((Path(self.tmp.name) / "out").rglob("*.mp4"))
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0].stat().st_size, 1024)
         self.assertEqual(self.store.stats()["videos"], {"done": 1})
         # Local copy is deleted after upload.
         leftovers = [p for p in Path(self.cfg["transfer"]["temp_dir"]).rglob("*") if p.is_file()]

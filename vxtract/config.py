@@ -33,8 +33,10 @@ DEFAULTS = {
         "rate_limit": "",
         "filename_template": "%(title).80B [%(id)s].%(ext)s",
         "cookies_file": "",
+        "cookies_from_browser": "",
     },
     "destination": {
+        "local_dir": "",
         "remote": "",
         "rclone_flags": ["--retries", "3", "--low-level-retries", "10"],
     },

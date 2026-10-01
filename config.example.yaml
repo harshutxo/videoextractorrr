@@ -45,11 +45,18 @@ transfer:
   rate_limit: ""
   # yt-dlp output name. Must be unique per video, so keep %(id)s in it.
   filename_template: "%(title).80B [%(id)s].%(ext)s"
-  # Optional cookies.txt for sites where you have an account.
+  # For videos behind a login: a cookies.txt exported from a logged-in browser
+  # (e.g. with the "Get cookies.txt LOCALLY" extension) ...
   cookies_file: ""
+  # ... or read cookies straight from a browser: chrome, edge, firefox.
+  # Close that browser first on Windows, or use cookies_file instead.
+  cookies_from_browser: ""
 
 destination:
-  # Any rclone remote: S3, R2, B2, Google Drive, OneDrive, Dropbox, SFTP, FTP,
+  # Save videos to this folder on this PC. If set, `remote` is ignored and
+  # rclone isn't needed.
+  local_dir: "D:/esaral-videos"
+  # Or upload to any rclone remote: S3, R2, B2, Google Drive, OneDrive, Dropbox, SFTP, FTP,
   # WebDAV, Azure, GCS... Set one up with `rclone config`, then point at it here.
   # Examples:  "s3:my-bucket/videos"   "gdrive:Backups/videos"   "sftp-nas:/data/videos"
   # A plain local folder also works:  "D:/videos"

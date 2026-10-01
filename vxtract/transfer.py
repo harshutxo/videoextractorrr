@@ -20,13 +20,15 @@ class TransferError(Exception):
     pass
 
 
-def check_tools(remote: str) -> None:
-    if not shutil.which("rclone"):
-        raise SystemExit("rclone is not installed or not on PATH. See README.md > Setup.")
+def check_tools(dest: dict) -> None:
     if not shutil.which("ffmpeg"):
         log.warning("ffmpeg not found: videos with separate audio/video streams will fail to merge.")
-    if not remote:
-        raise SystemExit("destination.remote is empty in config.yaml.")
+    if dest.get("local_dir"):
+        return
+    if not dest.get("remote"):
+        raise SystemExit("Set destination.local_dir or destination.remote in config.yaml.")
+    if not shutil.which("rclone"):
+        raise SystemExit("rclone is not installed or not on PATH. See README.md > Setup.")
 
 
 class Transferer:
@@ -41,7 +43,7 @@ class Transferer:
         self._count_lock = threading.Lock()
 
     def run(self) -> None:
-        check_tools(self.dest["remote"])
+        check_tools(self.dest)
         self.temp_root.mkdir(parents=True, exist_ok=True)
         threads = [threading.Thread(target=self._worker, args=(i,), name=f"xfer-{i}", daemon=True)
                    for i in range(self.opts["workers"])]
@@ -73,7 +75,7 @@ class Transferer:
             try:
                 path = self.download(url, work_dir)
                 size = path.stat().st_size
-                remote_path = self.upload(path)
+                remote_path = self.store_file(path, work_dir)
                 self.store.video_done(vid, remote_path, size)
                 with self._count_lock:
                     self.done_count += 1
@@ -101,17 +103,29 @@ class Transferer:
             ydl_opts["ratelimit"] = yt_dlp.utils.parse_bytes(self.opts["rate_limit"])
         if self.opts["cookies_file"]:
             ydl_opts["cookiefile"] = self.opts["cookies_file"]
+        if self.opts.get("cookies_from_browser"):
+            ydl_opts["cookiesfrombrowser"] = (self.opts["cookies_from_browser"],)
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        files = [p for p in work_dir.iterdir() if p.is_file() and not p.name.endswith((".part", ".ytdl"))]
+        files = [p for p in work_dir.rglob("*") if p.is_file() and not p.name.endswith((".part", ".ytdl"))]
         if not files:
             raise TransferError("yt-dlp produced no file")
         return max(files, key=lambda p: p.stat().st_size)
 
-    def upload(self, path: Path) -> str:
-        remote_path = self.dest["remote"].rstrip("/") + "/" + path.name
+    def store_file(self, path: Path, work_dir: Path) -> str:
+        # Keep any subfolders the filename template created (e.g. %(playlist)s/...).
+        rel = path.relative_to(work_dir).as_posix()
+        if self.dest.get("local_dir"):
+            target = Path(self.dest["local_dir"]).resolve() / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(path), str(target))
+            return str(target)
+        return self.upload(path, rel)
+
+    def upload(self, path: Path, rel: str) -> str:
+        remote_path = self.dest["remote"].rstrip("/") + "/" + rel
         cmd = ["rclone", "copyto", str(path), remote_path, *self.dest["rclone_flags"]]
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if result.returncode != 0:
