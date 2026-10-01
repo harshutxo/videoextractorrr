@@ -47,8 +47,8 @@ start_urls ──► crawler ──► pages table ──► video URLs ──�
 ### Videos behind a login
 
 Log in to the site in your browser and export its cookies to a `cookies.txt` file (for example with the
-"Get cookies.txt LOCALLY" extension). Then set `transfer.cookies_file: cookies.txt`, and add `cookies.txt`
-to `.gitignore` because it acts as your login. Videos protected by DRM can't be downloaded this way; get those
+"Get cookies.txt LOCALLY" extension). Then set `transfer.cookies_file: cookies.txt`. It acts as your login, so it is
+already in `.gitignore` and never committed. Videos protected by DRM can't be downloaded this way; get those
 from the video host or storage instead.
 
 ## Usage
